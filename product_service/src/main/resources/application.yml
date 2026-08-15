@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: product-service
+  elasticsearch:
+    uris: http://localhost:9200
+  config:
+    import: "optional:configserver:http://localhost:8888"

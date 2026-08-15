@@ -1,0 +1,368 @@
+openapi: 3.0.3
+info:
+  title: Product Service API
+  version: 1.0.0
+  description: API for managing Products, Categories, and Reviews
+
+paths:
+  # --- PRODUCT ENDPOINTS ---
+  /api/products:
+    get:
+      tags: [Product]
+      summary: Get list of products with filters
+      operationId: getAllProducts
+      parameters:
+        - name: categoryId
+          in: query
+          schema:
+            type: string
+        - name: minPrice
+          in: query
+          schema:
+            type: number
+            format: double
+        - name: maxPrice
+          in: query
+          schema:
+            type: number
+            format: double
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: sort
+          in: query
+          schema:
+            type: string
+            example: "price,asc"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductPageResponse'
+    post:
+      tags: [Product]
+      summary: Create new product (Admin only)
+      operationId: createProduct
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+      responses:
+        '201':
+          description: Product created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+
+  /api/products/search:
+    get:
+      tags: [Product]
+      summary: Search products
+      operationId: searchProducts
+      parameters:
+        - name: keyword
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductResponse'
+
+  /api/products/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Product]
+      summary: Get product detail
+      operationId: getProductById
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+    put:
+      tags: [Product]
+      summary: Update product
+      operationId: updateProduct
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+      responses:
+        '200':
+          description: Product updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+    delete:
+      tags: [Product]
+      summary: Delete product
+      operationId: deleteProduct
+      responses:
+        '204':
+          description: Deleted
+
+  # --- REVIEW ENDPOINTS ---
+  /api/products/{id}/reviews:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Product]
+      summary: Get reviews for a product
+      operationId: getProductReviews
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReviewResponse'
+    post:
+      tags: [Product]
+      summary: Add a review
+      operationId: addProductReview
+      parameters:
+        - $ref: '#/components/parameters/XUserId' # Bắt buộc để biết ai review
+        - $ref: '#/components/parameters/XUserName' # Bắt buộc để biết tên người review
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewRequest'
+      responses:
+        '201':
+          description: Review added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewResponse'
+  /api/products/batch:
+    post:
+      tags: [ Product ]
+      summary: Lấy danh sách sản phẩm theo danh sách ID
+      operationId: getProductsByIds
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductResponse'
+  # --- CATEGORY ENDPOINTS ---
+  /api/categories:
+    get:
+      tags: [Category]
+      summary: Get all categories
+      operationId: getAllCategories
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CategoryResponse'
+    post:
+      tags: [Category]
+      summary: Create new category
+      operationId: createCategory
+      parameters:
+        - $ref: '#/components/parameters/XUserId'
+        - $ref: '#/components/parameters/XUserRole'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+      responses:
+        '201':
+          description: Created
+
+  /api/categories/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [ Category ]
+      summary: Get category by ID
+      operationId: getCategoryById
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+    put:
+      tags: [ Category ]
+      summary: Update category
+      operationId: updateCategory
+      parameters:
+        - $ref: '#/components/parameters/XUserId'
+        - $ref: '#/components/parameters/XUserRole'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+      responses:
+        '200':
+          description: Updated
+    delete:
+      tags: [ Category ]
+      summary: Delete category
+      operationId: deleteCategory
+      parameters:
+        - $ref: '#/components/parameters/XUserId'
+        - $ref: '#/components/parameters/XUserRole'
+      responses:
+        '204':
+          description: Deleted
+components:
+  parameters:
+    XUserId:
+      name: X-User-Id
+      in: header
+      required: true
+      description: User ID passed from API Gateway
+      schema:
+        type: string
+    XUserName:
+      name: X-User-Name
+      in: header
+      required: true
+      description: User Name passed from API Gateway
+      schema:
+        type: string
+    XUserRole:
+      name: X-User-Role
+      in: header
+      required: false
+      description: User Role passed from API Gateway
+      schema:
+        type: string
+
+  schemas:
+    CategoryRequest:
+      type: object
+      properties:
+        name: { type: string }
+        description: { type: string }
+
+    CategoryResponse:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+
+    ProductRequest:
+      type: object
+      required: [name, price, categoryId]
+      properties:
+        name: { type: string }
+        description: { type: string }
+        price: { type: number, format: double }
+        stockQuantity: { type: integer }
+        categoryId: { type: string }
+        imageUrls:
+          type: array
+          items: { type: string }
+
+    ProductResponse:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+        price: { type: number, format: double }
+        stockQuantity: { type: integer }
+        averageRating: { type: number, format: double }
+        categoryName: { type: string }
+        imageUrls:
+          type: array
+          items: { type: string }
+
+    ProductPageResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items: { $ref: '#/components/schemas/ProductResponse' }
+        totalPages: { type: integer }
+        totalElements: { type: integer }
+        last: { type: boolean }
+
+    ReviewRequest:
+      type: object
+      required: [rating, comment]
+      properties:
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        comment: { type: string }
+
+    ReviewResponse:
+      type: object
+      properties:
+        id: { type: string }
+        productId: { type: string }
+        userId: { type: string }
+        userName: { type: string }
+        rating: { type: integer }
+        comment: { type: string }
+        createdAt: { type: string, format: date-time }

@@ -1,0 +1,344 @@
+openapi: 3.0.3
+
+info:
+  title: Authentication Service API
+  version: 1.0.0
+  description: Authentication and Authorization APIs
+
+servers:
+  - url: http://localhost:8081
+
+tags:
+  - name: Authentication
+    description: Authentication APIs
+
+paths:
+
+  /api/auth/register:
+    post:
+      tags:
+        - Public Authentication
+      operationId: register
+      summary: Register new account
+
+      requestBody:
+        required: true
+
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+
+      responses:
+        '201':
+          description: Register successfully
+
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+
+  /api/auth/login:
+    post:
+      tags:
+        - Public Authentication
+
+      operationId: login
+
+      summary: Login
+
+      requestBody:
+        required: true
+
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+
+      responses:
+        '200':
+          description: Login successfully
+
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+
+  /api/auth/refresh-token:
+    post:
+      tags:
+        - Public Authentication
+
+      operationId: refreshToken
+
+      summary: Refresh JWT token
+
+      requestBody:
+        required: true
+
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+
+      responses:
+        '200':
+          description: Refresh token success
+
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+
+  /api/auth/logout:
+    post:
+      tags:
+        - Public Authentication
+
+      operationId: logout
+
+      summary: Logout current session
+
+      requestBody:
+        required: true
+
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+
+      responses:
+        '204':
+          description: Logout success
+
+  /api/auth/validate-token:
+    post:
+      tags:
+        - Public Authentication
+
+      operationId: validateToken
+
+      summary: Validate JWT token
+
+      requestBody:
+        required: true
+
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidateTokenRequest'
+
+      responses:
+        '200':
+          description: Token validation result
+
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidateTokenResponse'
+
+  /api/auth/me:
+    get:
+      tags:
+        - User Authentication
+
+      operationId: getCurrentUser
+
+      summary: Current authenticated user
+
+      security:
+        - bearerAuth: [ ]
+
+      responses:
+        '200':
+          description: Current user information
+
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfoResponse'
+
+  /api/auth/change-password:
+    put:
+      tags:
+        - User Authentication
+
+      operationId: changePassword
+
+      summary: Change password
+
+      security:
+        - bearerAuth: [ ]
+
+      requestBody:
+        required: true
+
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+
+      responses:
+        '204':
+          description: Password changed
+
+  /api/auth/users/{id}:
+    delete:
+      tags:
+        - User Authentication
+      operationId: deleteUser
+      summary: Delete a user by id
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: User deleted successfully
+
+components:
+
+  securitySchemes:
+
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+
+    RegisterRequest:
+      type: object
+
+      required:
+        - email
+        - password
+        - confirmPassword
+
+      properties:
+
+        email:
+          type: string
+          format: email
+        fullName:
+          type: string
+        phoneNumber:
+          type: string
+        password:
+          type: string
+
+        confirmPassword:
+          type: string
+
+    RegisterResponse:
+      type: object
+
+      properties:
+
+        userId:
+          type: string
+
+        email:
+          type: string
+        fullName:
+          type: string
+        phoneNumber:
+          type: string
+        message:
+          type: string
+
+    LoginRequest:
+      type: object
+
+      required:
+        - email
+        - password
+
+      properties:
+
+        email:
+          type: string
+          format: email
+
+        password:
+          type: string
+
+    LoginResponse:
+      type: object
+
+      properties:
+
+        accessToken:
+          type: string
+
+        refreshToken:
+          type: string
+
+        expiresIn:
+          type: integer
+          format: int64
+
+    RefreshTokenRequest:
+      type: object
+
+      required:
+        - refreshToken
+
+      properties:
+
+        refreshToken:
+          type: string
+
+    ChangePasswordRequest:
+      type: object
+
+      required:
+        - oldPassword
+        - newPassword
+
+      properties:
+
+        oldPassword:
+          type: string
+
+        newPassword:
+          type: string
+
+    UserInfoResponse:
+      type: object
+
+      properties:
+
+        id:
+          type: string
+
+        email:
+          type: string
+
+        fullName:
+          type: string
+
+        phoneNumber:
+          type: string
+
+        role:
+          type: string
+
+    ValidateTokenRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+
+    ValidateTokenResponse:
+      type: object
+      properties:
+        valid:
+          type: boolean
+

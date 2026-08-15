@@ -1,0 +1,5 @@
+openapi: 3.0.3
+info:
+  title: Dự án chạy thử (Mô hình API-First)
+  version: 1.0.0
+paths: {} # Định nghĩa không có API nào cả

@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: api_gateway
+
+  config:
+    import: "optional:configserver:http://localhost:8888"
+jwt:
+  secret: "zWJ8JyZXYmer/Xree/MRKbw//xUlXhG2GVQQuHUaH24="
+  access-token-expiration: 1800000        # 30 phút
+  refresh-token-expiration: 604800000    # 7 ngày

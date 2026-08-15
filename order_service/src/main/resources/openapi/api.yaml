@@ -1,0 +1,198 @@
+openapi: 3.0.3
+info:
+  title: Order Service API
+  version: 1.0.0
+  description: API quản lý Đơn hàng và Thanh toán
+
+servers:
+  - url: http://localhost:8085
+    description: Order Service Local
+
+paths:
+  /api/orders:
+    post:
+      tags: [Order]
+      summary: Đặt hàng mới
+      operationId: placeOrder
+      parameters:
+        - $ref: '#/components/parameters/XUserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+      responses:
+        '201':
+          description: Đơn hàng đã được tạo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+
+    get:
+      tags: [Order]
+      summary: Lấy danh sách đơn hàng của tôi
+      operationId: getMyOrders
+      parameters:
+        - $ref: '#/components/parameters/XUserId'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [PENDING, PAID, SHIPPING, DELIVERED, CANCELLED]
+        - name: page
+          in: query
+          schema: { type: integer, default: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 10 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderPageResponse'
+
+  /api/orders/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+      - $ref: '#/components/parameters/XUserId'
+    get:
+      tags: [Order]
+      summary: Xem chi tiết một đơn hàng
+      operationId: getOrderById
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+
+  /api/orders/{id}/cancel:
+    put:
+      tags: [Order]
+      summary: Hủy đơn hàng
+      operationId: cancelOrder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - $ref: '#/components/parameters/XUserId'
+      responses:
+        '200':
+          description: Đơn hàng đã hủy
+
+  /api/orders/{id}/status:
+    put:
+      tags: [Order]
+      summary: Cập nhật trạng thái (Admin Only)
+      operationId: updateOrderStatus
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - $ref: '#/components/parameters/XUserRole'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: string, enum: [SHIPPING, DELIVERED, CANCELLED] }
+      responses:
+        '200':
+          description: Cập nhật thành công
+
+  /api/orders/{id}/payment-url:
+    get:
+      tags: [Payment]
+      summary: Lấy URL thanh toán VNPay
+      operationId: getPaymentUrl
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - $ref: '#/components/parameters/XUserId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  paymentUrl: { type: string }
+
+components:
+  parameters:
+    XUserId:
+      name: X-User-Id
+      in: header
+      required: true
+      schema: { type: string }
+    XUserRole:
+      name: X-User-Role
+      in: header
+      required: false
+      schema: { type: string }
+
+  schemas:
+    CreateOrderRequest:
+      type: object
+      required: [addressId, paymentMethod, items]
+      properties:
+        addressId: { type: string }
+        paymentMethod: { type: string, enum: [WALLET, VNPAY, COD] }
+        note: { type: string }
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItemRequest'
+
+    OrderItemRequest:
+      type: object
+      required: [productId, quantity]
+      properties:
+        productId: { type: string }
+        quantity: { type: integer, minimum: 1 }
+
+    OrderResponse:
+      type: object
+      properties:
+        id: { type: string }
+        userId: { type: string }
+        totalPrice: { type: number, format: double } # <-- Kiểu Double
+        status: { type: string }
+        paymentMethod: { type: string }
+        createdAt: { type: string, format: date-time }
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItemResponse'
+
+    OrderItemResponse:
+      type: object
+      properties:
+        productId: { type: string }
+        productName: { type: string }
+        quantity: { type: integer }
+        priceAtPurchase: { type: number, format: double } # <-- Kiểu Double
+
+    OrderPageResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items: { $ref: '#/components/schemas/OrderResponse' }
+        totalPages: { type: integer }
+        totalElements: { type: integer }

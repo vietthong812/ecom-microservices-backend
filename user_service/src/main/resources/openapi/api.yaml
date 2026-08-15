@@ -1,0 +1,286 @@
+
+openapi: 3.0.3
+info:
+  title: User Service API
+  version: 1.0.0
+  description: API for managing User Profiles, Addresses, and Wallets
+
+servers:
+  - url: http://localhost:8082
+    description: User Service Local
+
+paths:
+  # --- PROFILE ENDPOINTS ---
+  /api/users/profile:
+    get:
+      tags: [Profile]
+      summary: Get current user profile
+      operationId: getUserProfile
+      parameters:
+        - $ref: '#/components/parameters/XUserId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+    put:
+      tags: [Profile]
+      summary: Update user profile
+      operationId: updateUserProfile
+      parameters:
+        - $ref: '#/components/parameters/XUserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+
+  # --- ADDRESS ENDPOINTS ---
+  /api/users/addresses:
+    get:
+      tags: [Address]
+      summary: Get all addresses for the user
+      operationId: getUserAddresses
+      parameters:
+        - $ref: '#/components/parameters/XUserId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AddressResponse'
+    post:
+      tags: [Address]
+      summary: Add a new address
+      operationId: addAddress
+      parameters:
+        - $ref: '#/components/parameters/XUserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+      responses:
+        '201':
+          description: Address created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddressResponse'
+
+  /api/users/addresses/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/XUserId'
+    get:
+      tags: [Address]
+      summary: Get address by ID
+      operationId: getAddressById
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddressResponse'
+    put:
+      tags: [Address]
+      summary: Update address
+      operationId: updateAddress
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+      responses:
+        '200':
+          description: Address updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddressResponse'
+    delete:
+      tags: [Address]
+      summary: Delete address
+      operationId: deleteAddress
+      responses:
+        '204':
+          description: Deleted
+
+  # --- WALLET ENDPOINTS ---
+  /api/users/wallet:
+    get:
+      tags: [Wallet]
+      summary: Get wallet balance
+      operationId: getWalletBalance
+      parameters:
+        - $ref: '#/components/parameters/XUserId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WalletResponse'
+
+  /api/users/wallet/transactions:
+    get:
+      tags: [Wallet]
+      summary: Get wallet transaction history
+      operationId: getWalletTransactions
+      parameters:
+        - $ref: '#/components/parameters/XUserId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WalletTransactionResponse'
+  /api/users/wallet/transactions/{txn_ref}:
+    get:
+      tags: [Wallet]
+      summary: Get wallet transaction by txn_ref
+      operationId: getWalletTransactionByTxnRef
+      parameters:
+        - name: txn_ref
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WalletTransactionResponse'
+  /api/users/wallet/transactions/{txn_ref}/status:
+    patch:
+      tags: [ Wallet ]
+      summary: Update transaction status
+      operationId: updateTransactionStatus
+      parameters:
+        - name: txn_ref
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTransactionStatusRequest'
+      responses:
+        '200':
+          description: Transaction status updated successfully
+  /api/users/wallet/update:
+    post:
+      tags: [Wallet]
+      summary: Update wallet balance (Deposit/Withdraw)
+      operationId: updateWalletBalance
+      parameters:
+        - $ref: '#/components/parameters/XUserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateWalletRequest'
+      responses:
+        '200':
+          description: Wallet updated successfully
+
+components:
+  parameters:
+    XUserId:
+      name: X-User-Id
+      in: header
+      required: true
+      schema:
+        type: string
+
+  schemas:
+    UserProfileResponse:
+      type: object
+      properties:
+        id: { type: string }
+        email: { type: string }
+        fullName: { type: string }
+        phoneNumber: { type: string }
+
+    UpdateProfileRequest:
+      type: object
+      properties:
+        fullName: { type: string }
+        phoneNumber: { type: string }
+
+    AddressRequest:
+      type: object
+      required: [street, city]
+      properties:
+        street: { type: string }
+        city: { type: string }
+        district: { type: string }
+        isDefault: { type: boolean }
+
+    AddressResponse:
+      type: object
+      properties:
+        id: { type: string }
+        street: { type: string }
+        city: { type: string }
+        district: { type: string }
+        isDefault: { type: boolean }
+
+    WalletResponse:
+      type: object
+      properties:
+        id: { type: string }
+        balance: { type: number, format: double }
+
+    WalletTransactionResponse:
+      type: object
+      properties:
+        id: { type: string }
+        amount: { type: number, format: double }
+        type: { type: string, enum: [DEPOSIT, WITHDRAW, PAYMENT] }
+        status: { type: string, enum: [PENDING, SUCCESS, FAILED, CANCELLED] }
+        paymentMethod: { type: string, enum: [WALLET, VNPAY] }
+        createdAt: { type: string, format: date-time }
+
+
+    UpdateWalletRequest:
+      type: object
+      required: [ amount, type ]
+      properties:
+        amount: { type: number, format: double, minimum: 0 }
+        type: { type: string, enum: [ DEPOSIT, WITHDRAW, PAYMENT ] }
+        txnRef: { type: string }
+    UpdateTransactionStatusRequest:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [PENDING, SUCCESS, FAILED] }
