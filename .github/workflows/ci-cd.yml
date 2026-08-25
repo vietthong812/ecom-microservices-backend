@@ -7,6 +7,7 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         service: [api_gateway, auth_service, cart_service, config_server, discovery_server, notification-service, order_service, product_service, user_service]
 

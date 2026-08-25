@@ -2,7 +2,6 @@ package com.example.product_service.controller;
 
 import com.example.api.ProductApi;
 import com.example.dto.*;
-import com.example.dto.UpdateStockQuantityRequest;
 import com.example.product_service.service.ProductSearchService;
 import com.example.product_service.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
