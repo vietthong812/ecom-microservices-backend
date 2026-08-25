@@ -1,4 +1,4 @@
-package com.example.order_service.dto;
+package com.example.payment_service.dto;
 
 import lombok.Data;
 
@@ -7,5 +7,6 @@ import lombok.Data;
 public class UpdateWalletRequest {
     private double amount;
     private String txnRef;
-    private TransactionTypeEnum type;
+    private TransactionType transactionType;
+    private PaymentMethod paymentMethod;
 }

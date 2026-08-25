@@ -135,7 +135,28 @@ paths:
       responses:
         '204':
           description: Deleted
+  /api/products/{id}/stock:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    put:
+      tags: [Product]
+      summary: Update stock quantity
+      operationId: updateStockQuantity
+      parameters:
+        - name: quantity
+          in: query
+          required: true
+          schema:
+            type: integer
+          example: 100
 
+      responses:
+        '200':
+          description: Stock quantity updated
   # --- REVIEW ENDPOINTS ---
   /api/products/{id}/reviews:
     parameters:

@@ -158,6 +158,19 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/WalletTransactionResponse'
+    post:
+      tags: [Wallet]
+      summary: Create a new wallet transaction
+      operationId: createWalletTransaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWalletTransactionRequest'
+      responses:
+        '200':
+          description: Transaction created successfully
   /api/users/wallet/transactions/{txn_ref}:
     get:
       tags: [Wallet]
@@ -201,8 +214,6 @@ paths:
       tags: [Wallet]
       summary: Update wallet balance (Deposit/Withdraw)
       operationId: updateWalletBalance
-      parameters:
-        - $ref: '#/components/parameters/XUserId'
       requestBody:
         required: true
         content:
@@ -277,10 +288,30 @@ components:
       required: [ amount, type ]
       properties:
         amount: { type: number, format: double, minimum: 0 }
-        type: { type: string, enum: [ DEPOSIT, WITHDRAW, PAYMENT ] }
+        transactionType: { type: string, enum: [ DEPOSIT, WITHDRAW, PAYMENT ] }
+        paymentMethod: { type: string, enum: [ WALLET, VNPAY ] }
         txnRef: { type: string }
     UpdateTransactionStatusRequest:
       type: object
       required: [status]
       properties:
         status: { type: string, enum: [PENDING, SUCCESS, FAILED] }
+    CreateWalletTransactionRequest:
+      type: object
+      required: [amount, type, paymentMethod]
+      properties:
+        userId: { type: string }
+        orderId: { type: string }
+        createdAt: { type: string, format: date-time }
+        amount: { type: number, format: double, minimum: 0 }
+        transactionType: { type: string, enum: [ DEPOSIT, PAYMENT ] }
+        paymentMethod: { type: string, enum: [ WALLET, VNPAY ] }
+        txnRef: { type: string }
+        status:
+          type: string
+          enum:
+            - PENDING
+            - SUCCESS
+            - FAILED
+            - CANCELLED
+

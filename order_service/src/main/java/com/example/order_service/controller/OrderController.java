@@ -4,7 +4,6 @@ import com.example.api.OrderApi;
 import com.example.dto.CreateOrderRequest;
 import com.example.dto.OrderPageResponse;
 import com.example.dto.OrderResponse;
-import com.example.dto.UpdateOrderStatusRequest;
 import com.example.order_service.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -32,11 +31,5 @@ public class OrderController implements OrderApi {
     @Override
     public ResponseEntity<OrderResponse> getOrderById(String id, String xUserId) {
         return ResponseEntity.ok(orderService.getOrderById(id, xUserId));
-    }
-
-    @Override
-    public ResponseEntity<Void> updateOrderStatus(String id, UpdateOrderStatusRequest updateOrderStatusRequest, String xUserRole) {
-        orderService.updateOrderStatus(id, updateOrderStatusRequest, xUserRole);
-        return ResponseEntity.noContent().build();
     }
 }

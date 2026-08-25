@@ -12,8 +12,8 @@ public class RouteValidator {
             "/api/auth/login",
             "/api/auth/register",
             "/api/auth/refresh-token",
-            "/api/users/wallet/vnpay-return",
-            "/api/users/wallet/vnpay-ipn"
+            "/api/payments/vnpay-return",
+            "/api/payments/vnpay-ipn"
     );
     public Predicate<ServerHttpRequest> isSecured =
             request -> openApiEndpoints

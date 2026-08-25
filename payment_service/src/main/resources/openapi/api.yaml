@@ -1,0 +1,257 @@
+openapi: 3.0.3
+info:
+  title: Payment Service API (VNPay)
+  description: API tích hợp cổng thanh toán VNPay dựa trên VNPayController
+  version: 1.0.0
+servers:
+  - url: http://localhost:8087
+    description: Local Server
+  - url: http://localhost:8080/api/payments
+    description: API Gateway
+
+tags:
+  - name: VNPay
+    description: Các API xử lý giao dịch và tích hợp cổng thanh toán VNPay
+
+paths:
+  /api/payments/payment/create-vnpay-url:
+    post:
+      tags:
+        - VNPay
+      summary: Tạo URL thanh toán VNPay
+      description: Nhận thông tin số tiền, mã người dùng qua Header và tạo link thanh toán VNPay
+      operationId: createPaymentUrl
+      parameters:
+        - name: X-User-Id
+          in: header
+          required: true
+          description: ID của người dùng thực hiện giao dịch
+          schema:
+            type: string
+          example: "USER_12345"
+        - name: orderId
+          in: query
+          required: true
+          description: ID đơn hàng cần thanh toán
+          schema:
+            type: string
+          example: "ORD_123456"
+        - name: amount
+          in: query
+          required: true
+          description: Số tiền cần thanh toán (VND)
+          schema:
+            type: integer
+            format: int64
+          example: 250000
+        - name: bankCode
+          in: query
+          required: false
+          description: Mã ngân hàng (để trống nếu muốn người dùng chọn tại giao diện VNPay)
+          schema:
+            type: string
+          example: "NCB"
+        - name: PaymentMethod
+          in: query
+          required: false
+          description: Phương thức thanh toán (ATM, QR, VNPAYQR, etc.)
+          schema:
+            type: string
+            enum: [ WALLET, VNPAY, COD ]
+          example: "WALLET"
+        - name: TransactionType
+          in: query
+          required: false
+          description: Loại giao dịch (billpayment, topup, etc.)
+          schema:
+            type: string
+            enum: [ DEPOSIT, PAYMENT ]
+          example: "PAYMENT"
+      responses:
+        '200':
+          description: Tạo URL thanh toán thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: Yêu cầu không hợp lệ hoặc có lỗi phát sinh
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
+  /api/payments/deposit/create-vnpay-url:
+    post:
+      tags:
+        - VNPay
+      summary: Tạo URL nạp tiền vào ví qua VNPay
+      description: Nhận thông tin số tiền, mã người dùng qua Header và tạo link thanh toán VNPay
+      operationId: createDepositUrl
+      parameters:
+        - name: X-User-Id
+          in: header
+          required: true
+          description: ID của người dùng thực hiện giao dịch
+          schema:
+            type: string
+          example: "USER_12345"
+        - name: amount
+          in: query
+          required: true
+          description: Số tiền cần nạp (VND)
+          schema:
+            type: integer
+            format: int64
+          example: 250000
+        - name: bankCode
+          in: query
+          required: false
+          description: Mã ngân hàng (để trống nếu muốn người dùng chọn tại giao diện VNPay)
+          schema:
+            type: string
+          example: "NCB"
+      responses:
+        '200':
+          description: Tạo URL thanh toán thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: Yêu cầu không hợp lệ hoặc có lỗi phát sinh
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
+  /api/payments/vnpay-return:
+    get:
+      tags:
+        - VNPay
+      summary: Xử lý Return URL từ VNPay
+      description: Nhận dữ liệu điều hướng từ trình duyệt người dùng sau khi giao dịch trên VNPay
+      operationId: handleVnPayReturn
+      parameters:
+        - name: params
+          in: query
+          required: false
+          style: form
+          explode: true
+          description: Tập hợp tất cả các Query Parameters nhận được từ VNPay (Map<String, String>)
+          schema:
+            type: object
+            additionalProperties:
+              type: string
+            example:
+              vnp_Amount: "25000000"
+              vnp_BankCode: "NCB"
+              vnp_ResponseCode: "00"
+              vnp_TxnRef: "ORD_123456"
+              vnp_SecureHash: "a1b2c3d4..."
+      responses:
+        '200':
+          description: Trả về kết quả giao dịch (Thành công hoặc Thất bại)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VnPayReturnResponse'
+        '400':
+          description: Chữ ký không hợp lệ (Hash mismatch)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VnPayReturnResponse'
+
+  /api/payments/vnpay-ipn:
+    get:
+      tags:
+        - VNPay
+      summary: Xử lý IPN (Instant Payment Notification) từ VNPay
+      description: Server-to-Server callback từ VNPay nhận vào Map<String, String> để cập nhật trạng thái đơn hàng
+      operationId: vnpayIpn
+      parameters:
+        - name: allParams
+          in: query
+          required: false
+          style: form
+          explode: true
+          description: Map chứa toàn bộ tham số động gửi từ VNPay sang (Map<String, String>)
+          schema:
+            type: object
+            additionalProperties:
+              type: string
+            example:
+              vnp_Amount: "25000000"
+              vnp_BankCode: "NCB"
+              vnp_BankTranNo: "VNP14523612"
+              vnp_CardType: "ATM"
+              vnp_OrderInfo: "Thanh toan don hang ORD_123456"
+              vnp_PayDate: "20260817113000"
+              vnp_ResponseCode: "00"
+              vnp_TmnCode: "DEMO1234"
+              vnp_TransactionNo: "14523612"
+              vnp_TransactionStatus: "00"
+              vnp_TxnRef: "ORD_123456"
+              vnp_SecureHash: "e5d4c3b2a1..."
+      responses:
+        '200':
+          description: Phản hồi chuẩn định dạng Map<String, String> cho VNPay
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+
+components:
+  schemas:
+    ApiResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          example: "00"
+        message:
+          type: string
+          example: "success"
+        data:
+          type: string
+          example: "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?vnp_Amount=..."
+
+    ApiErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          example: "99"
+        message:
+          type: string
+          example: "Lỗi phát sinh trong quá trình xử lý"
+
+    VnPayReturnResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "success"
+        message:
+          type: string
+          example: "Giao dịch thành công"
+        txnRef:
+          type: string
+          example: "ORD_123456"
+        amount:
+          type: string
+          example: "25000000"
+
+    VnPayIpnResponse:
+      type: object
+      description: Định dạng Map<String, String> chuẩn cho VNPay IPN
+      properties:
+        RspCode:
+          type: string
+          example: "00"
+        Message:
+          type: string
+          example: "Confirm Success"
+      additionalProperties:
+        type: string

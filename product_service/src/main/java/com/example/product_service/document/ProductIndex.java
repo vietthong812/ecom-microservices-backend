@@ -8,9 +8,8 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
 import org.springframework.data.elasticsearch.annotations.Setting;
 
 @Document(indexName = "products") // Tên Index trong Elasticsearch
-@Setting(shards = 1, replicas = 0) // Cấu hình cơ bản cho môi trường dev
-@Getter
-@Setter
+@Setting(shards = 1, replicas = 0)
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

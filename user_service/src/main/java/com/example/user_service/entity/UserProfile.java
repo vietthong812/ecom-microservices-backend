@@ -27,11 +27,9 @@ public class UserProfile {
 
     private String phoneNumber;
 
-    // Quan hệ 1-N với Address
     @OneToMany(mappedBy = "userProfile", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Address> addresses;
 
-    // Quan hệ 1-1 với Wallet
     @OneToOne(mappedBy = "userProfile", cascade = CascadeType.ALL)
     @PrimaryKeyJoinColumn
     private Wallet wallet;

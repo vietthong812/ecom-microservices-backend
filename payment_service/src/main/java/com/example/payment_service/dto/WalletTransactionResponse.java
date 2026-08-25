@@ -1,6 +1,7 @@
-package com.example.order_service.dto;
+package com.example.payment_service.dto;
 
-import com.example.order_service.entity.PaymentMethod;
+import com.example.payment_service.dto.PaymentMethod;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,7 +16,7 @@ import java.time.LocalDateTime;
 public class WalletTransactionResponse {
     private String transactionId;
     private double amount;
-    private TransactionTypeEnum type;
+    private TransactionType type;
     private TransactionStatus status;
     private PaymentMethod paymentMethod;
     private LocalDateTime createdAt;

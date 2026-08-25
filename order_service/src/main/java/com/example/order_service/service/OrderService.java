@@ -5,7 +5,6 @@ import com.example.dto.OrderItemRequest;
 import com.example.dto.OrderItemResponse;
 import com.example.dto.OrderPageResponse;
 import com.example.dto.OrderResponse;
-import com.example.dto.UpdateOrderStatusRequest;
 import com.example.order_service.client.ProductServiceClient;
 import com.example.order_service.client.UserServiceClient;
 import com.example.order_service.dto.AddressResponse;
@@ -23,6 +22,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -51,22 +52,11 @@ public class OrderService {
         // 2. Gọi duy nhất 1 lần sang Product Service để lấy data
         List<ProductResponse> productResponses = productServiceClient.getProductsByIds(productIds);
 
-        // 3. Chuyển List thành Map để tìm kiếm cực nhanh bằng ID (độ phức tạp O(1))
+        // 3. Chuyển List thành Map để tìm kiếm bằng ID
         Map<String, ProductResponse> productMap = productResponses.stream()
                 .collect(Collectors.toMap(ProductResponse::getId, p -> p));
 
         AddressResponse addressResponse = userServiceClient.getAddressById(createOrderRequest.getAddressId(),userId);
-//        Order order = Order.builder()
-//                .userId(userId)
-//                .street(addressResponse.getStreet())
-//                .city(addressResponse.getCity())
-//                .district(addressResponse.getDistrict())
-//                .status(OrderStatus.PENDING)
-//                .paymentMethod(PaymentMethod.valueOf(createOrderRequest.getPaymentMethod().name()))
-//                .note(createOrderRequest.getNote())
-//                .createdAt(LocalDateTime.now())
-//                .updatedAt(LocalDateTime.now())
-//                .build();
         Order order = new Order();
         order.setUserId(userId);
         order.setStreet(addressResponse.getStreet());
@@ -75,12 +65,12 @@ public class OrderService {
         order.setStatus(OrderStatus.PENDING);
         order.setPaymentMethod(PaymentMethod.valueOf(createOrderRequest.getPaymentMethod().name()));
         order.setNote(createOrderRequest.getNote());
-        order.setCreatedAt(LocalDateTime.now());
-        order.setUpdatedAt(LocalDateTime.now());
+        order.setCreatedAt(OffsetDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")));
+        order.setUpdatedAt(OffsetDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")));
         order.setItems(new ArrayList<>());
         double totalAmount = 0;
 
-        // 5. Duyệt qua items khách gửi lên và khớp với dữ liệu từ Map
+        // 5. Duyệt qua items client gửi lên và khớp với dữ liệu từ Map
         for (OrderItemRequest itemReq : createOrderRequest.getItems()) {
             ProductResponse p = productMap.get(itemReq.getProductId());
 
@@ -113,7 +103,7 @@ public class OrderService {
             throw new RuntimeException("Chỉ có thể hủy đơn hàng đang chờ");
         }
         order.setStatus(OrderStatus.CANCELLED);
-        order.setUpdatedAt(LocalDateTime.now());
+        order.setUpdatedAt(OffsetDateTime.now());
         orderRepository.save(order);
     }
 
@@ -150,25 +140,6 @@ public class OrderService {
          response.setTotalPages(orderPage.getTotalPages());
          response.setTotalElements((int) orderPage.getTotalElements());
          return response;
-     }
-
-    public void updateOrderStatus(String id, UpdateOrderStatusRequest updateOrderStatusRequest, String xUserRole) {
-         if (xUserRole == null || !xUserRole.equals("ADMIN")) {
-             throw new RuntimeException("Chỉ admin mới có thể cập nhật trạng thái đơn hàng");
-         }
-
-         Order order = orderRepository.findById(id)
-                 .orElseThrow(() -> new RuntimeException("Đơn hàng không tồn tại: " + id));
-
-         UpdateOrderStatusRequest.StatusEnum statusEnum = updateOrderStatusRequest.getStatus();
-         if (statusEnum == null) {
-             throw new RuntimeException("Trạng thái là bắt buộc");
-         }
-
-         OrderStatus newStatus = OrderStatus.valueOf(statusEnum.getValue());
-         order.setStatus(newStatus);
-         order.setUpdatedAt(LocalDateTime.now());
-         orderRepository.save(order);
      }
 
  }

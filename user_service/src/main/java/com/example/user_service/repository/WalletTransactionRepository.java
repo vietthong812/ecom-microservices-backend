@@ -9,7 +9,6 @@ import java.util.Optional;
 
 @Repository
 public interface WalletTransactionRepository extends JpaRepository<WalletTransaction, Long> {
-
     // Lấy lịch sử giao dịch của ví, sắp xếp theo thời gian mới nhất lên đầu
     List<WalletTransaction> findByWalletIdOrderByCreatedAtDesc(String walletId);
 

@@ -36,7 +36,6 @@ public class Product {
 
     private Double averageRating = 0.0;
 
-    // Lưu danh sách URL ảnh vào một bảng phụ đơn giản (product_images)
     @ElementCollection
     @CollectionTable(name = "product_images", joinColumns = @JoinColumn(name = "product_id"))
     @Column(name = "image_url")

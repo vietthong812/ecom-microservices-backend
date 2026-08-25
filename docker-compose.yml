@@ -20,36 +20,32 @@ services:
       - ecommerce-network
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro  # Mount script SQL tự động chạy lần đầu
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root" ]
-      interval: 10s                        # Tần suất kiểm tra (mỗi 10 giây)
-      timeout: 5s                          # Thời gian chờ phản hồi tối đa
-      retries: 5                           # Thử lại 5 lần nếu thất bại trước khi báo UNHEALTHY
-      start_period: 30s                    # Thời gian chờ MySQL khởi động xong mới bắt đầu check
-#  # Apache Kafka Broker (Chế độ KRaft - Không cần Zookeeper)
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+  # Apache Kafka Broker
   kafka:
     image: apache/kafka:3.8.0
     container_name: kafka-broker
     restart: unless-stopped
     ports:
-      - "9092:9092" # Cổng kết nối từ ứng dụng chạy ở máy Host (Spring Boot/Flutter/NodeJS)
+      - "9092:9092"
     environment:
-      # Định danh node
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: 'broker,controller'
 
-      # Cấu hình Listener & Protocols
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
       KAFKA_LISTENERS: 'PLAINTEXT://:19092,CONTROLLER://:29093,PLAINTEXT_HOST://:9092'
       KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka-broker:19092,PLAINTEXT_HOST://localhost:9092'
 
-      # Cấu hình KRaft Controller
       KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
       KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
       KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka-broker:29093'
 
-      # Cấu hình tối ưu cho môi trường Dev (1 Node)
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
@@ -57,15 +53,14 @@ services:
     networks:
       - ecommerce-network
     volumes:
-      - kafka_data:/var/lib/kafka/data # Lưu lại dữ liệu topic/message ngay cả khi restart container
-
-  # Giao diện Web quản lý Kafka UI
+      - kafka_data:/var/lib/kafka/data
+  #Kafka UI
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
     restart: unless-stopped
     ports:
-      - "8090:8080" # Truy cập Web Dashboard tại http://localhost:8090
+      - "8090:8080"
     environment:
       DYNAMIC_CONFIG_ENABLED: 'true'
       KAFKA_CLUSTERS_0_NAME: local-cluster
@@ -74,20 +69,20 @@ services:
       - kafka
     networks:
       - ecommerce-network
-#    # --- 1. ELASTICSEARCH CONTAINER ---
+    # --- 1. ELASTICSEARCH CONTAINER ---
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0 # Chọn version phù hợp với dự án
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
     container_name: elasticsearch
     restart: always
     environment:
       - node.name=elasticsearch
       - cluster.name=ecommerce-cluster
-      - discovery.type=single-node       # Chạy chế độ 1 node cho nhẹ (phù hợp dev/local)
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m" # GIỚI HẠN RAM: Rất quan trọng vì Elasticsearch ngốn RAM rất lớn!
-      - xpack.security.enabled=false     # Tắt security/SSL nếu dev local cho đơn giản
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
     ports:
-      - "9200:9200" # Port REST API
-      - "9300:9300" # Port giao tiếp giữa các node
+      - "9200:9200"
+      - "9300:9300"
     networks:
       - ecommerce-network
     healthcheck:
@@ -95,26 +90,25 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
-#  # --- INFRASTRUCTURE SERVICES ---
+ # --- INFRASTRUCTURE SERVICES ---
   config-server:
     build: ./config_server
     container_name: config-server
     ports:
       - "8888:8888"
     volumes:
-      # Mount folder chứa các file .yml từ máy thật vào trong container
       - ./ecommerce_config_repo/config_repo:/app/config-repo
     networks:
       - ecommerce-network
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka/
-      SPRING_PROFILES_ACTIVE: native # Hoặc git tùy bạn
+      SPRING_PROFILES_ACTIVE: native
       SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS: file:/app/config-repo
     command: >
       --eureka.client.service-url.defaultZone=http://discovery-server:8761/eureka/
       --eureka.instance.hostname=config-server
       --eureka.instance.prefer-ip-address=false
-    healthcheck: # Thêm healthcheck cho config-server
+    healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8888/actuator/health || exit 1"]
       interval: 10s
       timeout: 5s
@@ -129,7 +123,7 @@ services:
       - "8761:8761"
     networks:
       - ecommerce-network
-    healthcheck: # Thêm healthcheck cho discovery-server
+    healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8761/actuator/health || exit 1"]
       interval: 10s
       timeout: 5s
@@ -158,7 +152,6 @@ services:
     environment:
       SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka-broker:19092
-      # Ghi đè DB MySQL
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/auth_db
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka/
     depends_on:
@@ -176,7 +169,6 @@ services:
     container_name: user-service
     environment:
       SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
-      # Ghi đè DB MySQL
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/user_db
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka-broker:19092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka/
@@ -195,7 +187,6 @@ services:
     container_name: order-service
     environment:
       SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
-      # Ghi đè DB MySQL
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/order_db
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka-broker:19092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka/
@@ -214,11 +205,27 @@ services:
     container_name: product-service
     environment:
       SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
-      # Ghi đè DB MySQL
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/product_db
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka-broker:19092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka/
       SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
+      TZ: Asia/Ho_Chi_Minh
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    networks:
+      - ecommerce-network
+  payment-service:
+    build: ./payment_service
+    container_name: payment-service
+    environment:
+      SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka-broker:19092
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka/
       TZ: Asia/Ho_Chi_Minh
     depends_on:
       mysql-db:

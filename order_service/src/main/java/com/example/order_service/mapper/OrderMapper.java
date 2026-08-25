@@ -2,6 +2,7 @@ package com.example.order_service.mapper;
 
 import com.example.dto.OrderItemResponse;
 import com.example.dto.OrderResponse;
+import com.example.order_service.dto.OrderItemDTO;
 import com.example.order_service.entity.Order;
 import com.example.order_service.entity.OrderItem;
 import org.springframework.stereotype.Component;
@@ -30,5 +31,11 @@ public class OrderMapper {
         orderItemResponse.setQuantity(orderItem.getQuantity());
         orderItemResponse.setPriceAtPurchase(orderItem.getPriceAtPurchase());
         return orderItemResponse;
+    }
+    public OrderItemDTO toOrderItemDTO(OrderItem orderItem) {
+        OrderItemDTO orderItemDTO = new OrderItemDTO();
+        orderItemDTO.setId(orderItem.getProductId());
+        orderItemDTO.setQuantity(orderItem.getQuantity());
+        return orderItemDTO;
     }
 }

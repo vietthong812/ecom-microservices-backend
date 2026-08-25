@@ -21,10 +21,12 @@ public class WalletTransaction {
 
     private Double amount;
     private String txnRef;
+    @Column(name = "order_id", nullable = true)
+    private String orderId;
     @Enumerated(EnumType.STRING)
     private PaymentMethod paymentMethod;
     @Enumerated(EnumType.STRING)
-    private TransactionType type ;
+    private TransactionType type;
     @Enumerated(EnumType.STRING)
     private TransactionStatus status = TransactionStatus.PENDING;
     @CreationTimestamp

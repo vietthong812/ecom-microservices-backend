@@ -88,37 +88,13 @@ paths:
       responses:
         '200':
           description: Đơn hàng đã hủy
-
-  /api/orders/{id}/status:
-    put:
-      tags: [Order]
-      summary: Cập nhật trạng thái (Admin Only)
-      operationId: updateOrderStatus
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string }
-        - $ref: '#/components/parameters/XUserRole'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                status: { type: string, enum: [SHIPPING, DELIVERED, CANCELLED] }
-      responses:
-        '200':
-          description: Cập nhật thành công
-
-  /api/orders/{id}/payment-url:
+  /api/orders/{orderId}/payment:
     get:
       tags: [Payment]
       summary: Lấy URL thanh toán VNPay
-      operationId: getPaymentUrl
+      operationId: orderPayment
       parameters:
-        - name: id
+        - name: orderId
           in: path
           required: true
           schema: { type: string }
@@ -129,9 +105,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  paymentUrl: { type: string }
+                $ref: '#/components/schemas/PaymentUrlResponse'
 
 components:
   parameters:
@@ -196,3 +170,9 @@ components:
           items: { $ref: '#/components/schemas/OrderResponse' }
         totalPages: { type: integer }
         totalElements: { type: integer }
+    PaymentUrlResponse:
+      type: object
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data: { type: string }

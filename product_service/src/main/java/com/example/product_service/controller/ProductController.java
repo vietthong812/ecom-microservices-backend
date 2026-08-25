@@ -2,6 +2,7 @@ package com.example.product_service.controller;
 
 import com.example.api.ProductApi;
 import com.example.dto.*;
+import com.example.dto.UpdateStockQuantityRequest;
 import com.example.product_service.service.ProductSearchService;
 import com.example.product_service.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,6 +50,11 @@ public class ProductController implements ProductApi {
     @Override
     public ResponseEntity<List<ProductResponse>> searchProducts(String keyword) {
         return new ResponseEntity<>(productSearchService.searchProducts(keyword), HttpStatus.OK);
+    }
+
+    @Override
+    public ResponseEntity<Void> updateStockQuantity(String id, Integer quantity) {
+        return productService.updateStockQuantity(id, quantity);
     }
 
     @Override

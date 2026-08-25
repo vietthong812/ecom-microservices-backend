@@ -1,4 +1,4 @@
-package com.example.order_service.config;
+package com.example.payment_service.config;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.Getter;
@@ -68,7 +68,6 @@ public class VNPayConfig {
     }
 
     public String hashAllFields(Map<String, String> fields) {
-        // Dùng TreeMap để tự động sắp xếp theo Alphabet của Key
         List<String> fieldNames = new ArrayList<>(fields.keySet());
         Collections.sort(fieldNames);
 

@@ -19,8 +19,7 @@ import java.util.List;
 public class UserController implements ProfileApi {
     @Autowired
     private UserService userService;
-
-
+    
     @Override
     public ResponseEntity<UserProfileResponse> getUserProfile(String userId) {
         return ResponseEntity.ok(userService.getUserProfile(userId));

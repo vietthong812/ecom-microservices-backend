@@ -21,21 +21,18 @@ public class ProductSearchService {
     private final ProductMapper productMapper;
 
     public List<ProductResponse> searchProducts(String keyword) {
-        // 1. Xây dựng Native Query (Sử dụng cấu trúc của Elasticsearch 8.x)
         NativeQuery query = NativeQuery.builder()
                 .withQuery(q -> q
                         .multiMatch(m -> m
-                                .fields("name^3", "description") // Tên quan trọng gấp 3 lần mô tả
+                                .fields("name^3", "description")
                                 .query(keyword)
-                                .fuzziness("AUTO") // Tự động sửa lỗi chính tả (ví dụ: iphne -> iphone)
+                                .fuzziness("AUTO")
                         )
                 )
                 .build();
 
-        // 2. Thực hiện tìm kiếm
         SearchHits<ProductIndex> searchHits = elasticsearchOperations.search(query, ProductIndex.class);
 
-        // 3. Chuyển đổi kết quả SearchHits sang List DTO
         return searchHits.getSearchHits().stream()
                 .map(SearchHit::getContent)
                 .map(productMapper::toResponse)

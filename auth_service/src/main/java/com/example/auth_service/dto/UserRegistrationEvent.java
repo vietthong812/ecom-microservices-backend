@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-//dto dùng để truyền dữ liệu cho kafka
+//kafka: dto dùng để truyền dữ liệu tạo user cho user_service
 public class UserRegistrationEvent {
     private String userId;
     private String email;

@@ -17,6 +17,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,19 +29,17 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ProductService {
 
-    private final ProductRepository productRepository;           // MySQL
-    private final ReviewRepository reviewRepository;             // MySQL
-    private final ProductSearchRepository productSearchRepository; // Elasticsearch
+    private final ProductRepository productRepository;
+    private final ReviewRepository reviewRepository;
+    private final ProductSearchRepository productSearchRepository;
     private final CategoryRepository categoryRepository;
     private final ProductMapper productMapper;
     private final ReviewMapper reviewMapper;
     @Transactional
     public ProductResponse createProduct(ProductRequest request) {
-        // 1. Tìm Category
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy danh mục sản phẩm"));
 
-        // 2. Lưu vào MySQL
         Product product = Product.builder()
                 .name(request.getName())
                 .description(request.getDescription())
@@ -54,25 +53,19 @@ public class ProductService {
         product = productRepository.save(product);
         log.info("Sản phẩm đã được lưu vào MySQL với ID: {}", product.getId());
         ProductIndex productIndex = productMapper.toElasticsearchIndex(product);
-        // 3. Đồng bộ sang Elasticsearch
+        //Đồng bộ sang Elasticsearch
         try {
-
             productSearchRepository.save(productIndex);
             log.info("Sản phẩm đã được đồng bộ vào Elasticsearch với ID: {}", product.getId());
         } catch (Exception e) {
-            // Lưu ý: Nếu ES lỗi, bạn có thể chọn rollback MySQL hoặc chỉ log lỗi
             log.error("Cập nhật sản phẩm trong Elasticsearch thất bại: {}", e.getMessage());
-            // throw new RuntimeException("ES Sync Failed"); // Mở dòng này nếu muốn rollback cả MySQL
         }
         return productMapper.toProductRespone(product);
     }
 
     @Transactional
     public void deleteProductById(String id) {
-        // Xóa MySQL
         productRepository.deleteById(id);
-
-        // Xóa Elasticsearch
         productSearchRepository.deleteById(id);
         log.info("Sản phẩm đã được xóa khỏi cả DB và ES: {}", id);
     }
@@ -82,7 +75,7 @@ public class ProductService {
     }
     public ProductPageResponse getAllProducts(String categoryId, Double minPrice, Double maxPrice, Integer page, Integer size, String sort) {
 
-        // 1. Xử lý Sort object từ string (ví dụ: "price,asc")
+        // Xử lý Sort object từ string (ví dụ: "price,asc")
         Sort sortObj = Sort.unsorted();
         if (sort != null && sort.contains(",")) {
             String[] parts = sort.split(",");
@@ -91,13 +84,10 @@ public class ProductService {
             sortObj = Sort.by(Sort.Direction.fromString(direction), property);
         }
 
-        // 2. Tạo đối tượng Pageable
         Pageable pageable = PageRequest.of(page, size, sortObj);
 
-        // 3. Gọi duy nhất 1 hàm repository (Không cần if-else nữa)
         Page<Product> productPage = productRepository.findProductsWithFilters(categoryId, minPrice, maxPrice, pageable);
 
-        // 4. Chuyển đổi Page sang ProductPageResponse (DTO của OpenAPI)
         ProductPageResponse response = productMapper.toProductPageRespone(productPage);
         response.setTotalPages(productPage.getTotalPages());
         response.setTotalElements((int) productPage.getTotalElements());
@@ -112,7 +102,6 @@ public class ProductService {
             existingProduct.setPrice(product.getPrice());
             existingProduct.setStockQuantity(product.getStockQuantity());
             existingProduct.setImageUrls(product.getImageUrls());
-            // Cập nhật category nếu cần
             if (product.getCategoryId() != null) {
                 existingProduct.setCategory(categoryRepository.findById(product.getCategoryId()).orElse(null));
             }
@@ -148,7 +137,6 @@ public class ProductService {
         review.setProduct(product);
         Review savedReview = reviewRepository.save(review);
 
-        // Cập nhật averageRating cho sản phẩm
         List<Review> reviews = reviewRepository.findByProductId(productId);
         double averageRating = reviews.stream()
                 .mapToInt(Review::getRating)
@@ -172,5 +160,20 @@ public class ProductService {
     public List<ProductResponse> getProductsByIds (List<String> ids){
         List<Product> productList = productRepository.findAllByIdIn(ids);
         return productList.stream().map(productMapper::toProductRespone).collect(Collectors.toList());
+    }
+
+    public ResponseEntity<Void> updateStockQuantity(String id, Integer quantity) {
+        Product product= productRepository.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
+        product.setStockQuantity(product.getStockQuantity()-quantity);
+        productRepository.save(product);
+        // Đồng bộ sang Elasticsearch
+        try {
+            ProductIndex productIndex = productMapper.toElasticsearchIndex(product);
+            productSearchRepository.save(productIndex);
+            log.info("Sản phẩm đã được cập nhật trong Elasticsearch với ID: {}", product.getId());
+        } catch (Exception e) {
+            log.error("Cập nhật sản phẩm trong Elasticsearch thất bại: {}", e.getMessage());
+        }
+        return ResponseEntity.ok().build();
     }
 }

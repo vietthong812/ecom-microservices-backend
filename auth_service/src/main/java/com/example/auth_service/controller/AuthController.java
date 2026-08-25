@@ -19,8 +19,6 @@ public class AuthController implements PublicAuthenticationApi, UserAuthenticati
 
     private final AuthService authService;
 
-    // --- PUBLIC ENDPOINTS ---
-
     @Override
     public ResponseEntity<RegisterResponse> register(RegisterRequest registerRequest) {
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(registerRequest));
@@ -51,8 +49,6 @@ public class AuthController implements PublicAuthenticationApi, UserAuthenticati
     public ResponseEntity<ValidateTokenResponse> validateToken(ValidateTokenRequest validateTokenRequest) {
         return ResponseEntity.ok(authService.validateToken(validateTokenRequest));
     }
-
-    // --- AUTHENTICATED ENDPOINTS ---
 
     @Override
     public ResponseEntity<UserInfoResponse> getCurrentUser() {

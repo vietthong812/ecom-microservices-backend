@@ -35,7 +35,7 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
                 ServerHttpRequest request = exchange.getRequest();
                //kiem tra co header hay khong
                 if(!request.getHeaders().containsKey(HttpHeaders.AUTHORIZATION)){
-                    throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing Authorization Header");
+                    throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Thiếu header Authorization");
                 }
                 String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
                 if (authHeader != null && authHeader.startsWith("Bearer ")) {
@@ -43,11 +43,11 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
                 }
                 try {
                     jwtUtil.validateToken(authHeader);
-                    // 1. Trích xuất thông tin từ token (ví dụ lấy userId hoặc username)
+                    // Trích xuất thông tin từ token
                     String userId = jwtUtil.getUserIdFromToken(authHeader);
                     String userName = jwtUtil.getUsernameFromToken(authHeader);
                     String roles = jwtUtil.getRolesFromToken(authHeader); // nếu có phân quyền
-                    // --- BẮT ĐẦU PHẦN KIỂM TRA QUYỀN ADMIN ---
+                    // kiểm tra admin
                     String path = request.getURI().getPath();
                     String method = request.getMethod().name();
 
@@ -56,23 +56,21 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
                             && !method.equalsIgnoreCase("GET");
 
                     if (isAdminOnlyPath) {
-                        // Kiểm tra xem chuỗi roles có chứa ROLE_ADMIN không
                         if (roles == null || !roles.contains("ROLE_ADMIN")) {
-                            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access Denied: Admin role required");
+                            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "truy cập bị từ chối: chỉ admin mới có quyền thực hiện thao tác này");
                         }
                     }
-                    // 2. Đột biến (mutate) request để đính thêm thông tin này vào Header gửi đi tiếp
+                    // đính thêm thông tin này vào Header gửi đi tiếp
                     ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
                             .header("X-User-Id", userId)
                             .header("X-User-Name", userName)
                             .header("X-User-Roles", roles)
                             .build();
 
-                    // 3. Cho request đã được đính Header đi tiếp
                     return chain.filter(exchange.mutate().request(mutatedRequest).build());
                 }
                 catch (Exception e) {
-                    logger.error("JWT validation failed", e);
+                    logger.error("xác thực token thất bại", e);
                     throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, e.getMessage());}
             }
             return chain.filter(exchange);
